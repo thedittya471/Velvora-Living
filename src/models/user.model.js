@@ -1,7 +1,6 @@
 import mongoose, { Schema } from 'mongoose';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
-import { use } from 'react';
 
 const userSchema = new mongoose.Schema(
     {
@@ -19,6 +18,13 @@ const userSchema = new mongoose.Schema(
             lowercase: true,
             trim: true,
             match: [/^\S+@\S+\.\S+$/, 'Please use a valid email'],
+        },
+        fullName:{
+            type: String,
+            required: [true, 'Full name is required'],
+            trim: true,
+            minlength: 2,
+            maxlength: 100,
         },
         password: {
             type: String,

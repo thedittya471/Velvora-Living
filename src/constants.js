@@ -1,1 +1,1 @@
-export const DB_NAME = 'Velvora-Living';
+export const DB_NAME = 'velvora';
