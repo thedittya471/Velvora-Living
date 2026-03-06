@@ -68,9 +68,9 @@ const productSchema = new mongoose.Schema(
     }
 );
 
-productSchema.pre('save', function (next) {
+productSchema.pre('save', async function () {
+    if (!this.isModified("name")) return;
     this.slug = slugify(this.name, { lower: true });
-    next();
 });
 
 export const Product = mongoose.model('Product', productSchema);
