@@ -76,4 +76,21 @@ const getProducts = asyncHandler(async (req, res) => {
 
 })
 
-export { createProduct, getProducts };
+const getProductsById = asyncHandler(async (req, res) => {
+
+    const { productId } = req.params
+
+    const product = await Product.findById(productId)
+
+    if(!product){
+        throw new apiError(404, "Product not found")
+    }
+
+    return res
+        .status(200)
+        .json(
+            new apiResponse(200, product, "Product fetched successfully")
+        )
+})
+
+export { createProduct, getProducts, getProductsById };

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createProduct, getProducts } from '../controllers/product.controller.js';
+import { createProduct, getProducts, getProductsById } from '../controllers/product.controller.js';
 import { jwtVerify } from '../middlewares/auth.middleware.js';
 import { upload } from '../middlewares/multer.middleware.js';
 
@@ -11,5 +11,7 @@ router.route('/create-product').post(
     createProduct
 );
 router.route('/get-products').get(getProducts)
+router.route('/get-products/:productId').get(getProductsById)
+
 
 export default router;
