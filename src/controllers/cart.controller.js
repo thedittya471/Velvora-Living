@@ -54,5 +54,24 @@ const addToCart = asyncHandler(async (req, res) => {
     );
 })
 
+const getCart = asyncHandler(async (req, res) => {
+    
+    const cart = await Cart.findOne({ user: req.user._id })
+        .populate({
+            path: 'items.product',
+            select: 'name price images quantity'
+        })
+    
+    if(!cart){
+        return res
+            .status(200)
+            .json(new apiResponse(200, { items: [] }, "Cart is empty"))
+    }
 
-export { addToCart }
+    return res
+        .status(200)
+        .json(new apiResponse(200, cart, "Cart fetched successfully"))
+})
+
+
+export { addToCart, getCart }
