@@ -27,3 +27,15 @@ export const jwtVerify = asyncHandler(async (req, res, next) => {
     }
 
 })
+
+export const adminVerify = asyncHandler(async (req, res, next) => {
+    if(!req.user){
+        throw new apiError(401, "Unauthorized request")
+    }
+
+    if (req.user.role !== "admin") {
+        throw new apiError(403, "Forbidden: Admins only")
+    }
+
+    next()
+})
