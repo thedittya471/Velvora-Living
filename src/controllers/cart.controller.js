@@ -7,7 +7,7 @@ import { apiResponse } from '../utils/apiResponse.js'
 
 const addToCart = asyncHandler(async (req, res) => {
 
-    const { productId, quantity } = req.body
+    const { productId } = req.body
 
     if(!productId){
         throw new apiError(400, "Product id is required")
@@ -36,12 +36,12 @@ const addToCart = asyncHandler(async (req, res) => {
         const itemIndex = cart.items.findIndex(item => item.product.toString() === productId)
 
         if (itemIndex > -1){
-            cart.items[itemIndex].quantity += quantity || 1
+            cart.items[itemIndex].quantity += 1
         }
         else{
             cart.items.push({
                 product: productId,
-                quantity: quantity || 1,
+                quantity: 1,
                 price: product.price
             })
         }
