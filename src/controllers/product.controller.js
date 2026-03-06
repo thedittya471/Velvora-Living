@@ -11,7 +11,9 @@ const createProduct = asyncHandler(async (req, res) => {
         throw new apiError(400, 'All fields are required');
     }
 
-    const files = Array.isArray(req.files) ? req.files : req.files?.images || [];
+    const files = Array.isArray(req.files)
+        ? req.files
+        : req.files?.images || [];
 
     let imageUrls = [];
 
@@ -34,7 +36,7 @@ const createProduct = asyncHandler(async (req, res) => {
         stock,
         images: imageUrls,
         createdBy: req.user._id,
-    }); 
+    });
 
     return res
         .status(201)
@@ -42,23 +44,22 @@ const createProduct = asyncHandler(async (req, res) => {
 });
 
 const getProducts = asyncHandler(async (req, res) => {
-
     const page = Number(req.query.page) || 1;
     const limit = Number(req.query.limit) || 10;
-    const skip = (page-1) * limit;
+    const skip = (page - 1) * limit;
 
-    const filter = {}
+    const filter = {};
 
-    if(req.query.type){
-        filter.type = req.query.type
+    if (req.query.type) {
+        filter.type = req.query.type;
     }
 
     const products = await Product.find(filter)
         .skip(skip)
         .limit(limit)
-        .sort({ createdAt: -1 })
+        .sort({ createdAt: -1 });
 
-    const totalProducts = await Product.countDocuments(filter)
+    const totalProducts = await Product.countDocuments(filter);
 
     return res.status(200).json(
         new apiResponse(
@@ -67,30 +68,62 @@ const getProducts = asyncHandler(async (req, res) => {
                 products,
                 totalProducts,
                 page,
-                totalPages: Math.ceil(totalProducts / limit)
+                totalPages: Math.ceil(totalProducts / limit),
             },
-            "Products fetched successfully"
+            'Products fetched successfully'
         )
-    )
-
-
-})
+    );
+});
 
 const getProductsById = asyncHandler(async (req, res) => {
+    const { productId } = req.params;
 
-    const { productId } = req.params
+    const product = await Product.findById(productId);
 
-    const product = await Product.findById(productId)
-
-    if(!product){
-        throw new apiError(404, "Product not found")
+    if (!product) {
+        throw new apiError(404, 'Product not found');
     }
 
     return res
         .status(200)
-        .json(
-            new apiResponse(200, product, "Product fetched successfully")
-        )
-})
+        .json(new apiResponse(200, product, 'Product fetched successfully'));
+});
 
-export { createProduct, getProducts, getProductsById };
+const updateProduct = asyncHandler(async (req, res) => {
+    const { productId } = req.params;
+
+    const product = await Product.findById(productId);
+
+    if (!product) {
+        throw new apiError(404, 'Invalid product id');
+    }
+
+    const { name, description, price, stock } = req.body;
+
+    if (name) product.name = name;
+    if (description) product.description = description;
+    if (price) product.price = price;
+    if (stock) product.stock = stock;
+
+    if (req.files && req.files.length > 0) {
+        const imageUrls = [];
+
+        for (const file of req.files) {
+            const uploadedImage = await uploadOnCloudinary(file.path);
+
+            if (uploadedImage?.secure_url) {
+                imageUrls.push(uploadedImage.secure_url);
+            }
+        }
+
+        product.images = imageUrls;
+    }
+
+    await product.save({ validateBeforeSave: false });
+
+    return res
+        .status(200)
+        .json(new apiResponse(200, product, 'Product updated successfully'));
+});
+
+export { createProduct, getProducts, getProductsById, updateProduct };
