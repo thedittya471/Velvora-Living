@@ -126,4 +126,19 @@ const updateProduct = asyncHandler(async (req, res) => {
         .json(new apiResponse(200, product, 'Product updated successfully'));
 });
 
-export { createProduct, getProducts, getProductsById, updateProduct };
+const deleteProduct = asyncHandler(async (req, res) => {
+
+    const { productId } = req.params
+
+    const product = await Product.findById(productId)
+
+    if(!product){
+        throw new apiError(404, "Invalid product id")
+    }
+
+    await product.deleteOne()
+    
+    return res.status(200).json(new apiResponse(200, null, "Product deleted successfully"))
+})
+
+export { createProduct, getProducts, getProductsById, updateProduct, deleteProduct };

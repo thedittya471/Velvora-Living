@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createProduct, getProducts, getProductsById, updateProduct } from '../controllers/product.controller.js';
+import { createProduct, getProducts, getProductsById, updateProduct, deleteProduct } from '../controllers/product.controller.js';
 import { jwtVerify, adminVerify } from '../middlewares/auth.middleware.js';
 import { upload } from '../middlewares/multer.middleware.js';
 
@@ -20,6 +20,11 @@ router.route('/update-product/:productId').put(
     adminVerify,
     upload.array('images', 5),
     updateProduct
+)
+router.route('/delete-product/:productId').delete(
+    jwtVerify,
+    adminVerify,
+    deleteProduct
 )
 
 export default router;
