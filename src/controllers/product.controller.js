@@ -41,4 +41,39 @@ const createProduct = asyncHandler(async (req, res) => {
         .json(new apiResponse(201, product, 'Product created successfully'));
 });
 
-export { createProduct };
+const getProducts = asyncHandler(async (req, res) => {
+
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
+    const skip = (page-1) * limit;
+
+    const filter = {}
+
+    if(req.query.type){
+        filter.type = req.query.type
+    }
+
+    const products = await Product.find(filter)
+        .skip(skip)
+        .limit(limit)
+        .sort({ createdAt: -1 })
+
+    const totalProducts = await Product.countDocuments(filter)
+
+    return res.status(200).json(
+        new apiResponse(
+            200,
+            {
+                products,
+                totalProducts,
+                page,
+                totalPages: Math.ceil(totalProducts / limit)
+            },
+            "Products fetched successfully"
+        )
+    )
+
+
+})
+
+export { createProduct, getProducts };
