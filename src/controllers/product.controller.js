@@ -3,6 +3,7 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 import { apiError } from '../utils/apiError.js';
 import { apiResponse } from '../utils/apiResponse.js';
 import { uploadOnCloudinary } from '../utils/cloudinary.js';
+import { v2 as cloudinary } from 'cloudinary';
 
 const createProduct = asyncHandler(async (req, res) => {
     const { name, description, price, type, stock } = req.body;
@@ -23,8 +24,11 @@ const createProduct = asyncHandler(async (req, res) => {
     for (const file of files) {
         const uploadedImage = await uploadOnCloudinary(file.path);
 
-        if (uploadedImage?.secure_url) {
-            imageUrls.push(uploadedImage.secure_url);
+        if (uploadedImage?.secure_url && uploadedImage?.public_id) {
+            imageUrls.push({
+                url: uploadedImage.secure_url,
+                public_id: uploadedImage.public_id,
+            });
         }
     }
 
@@ -54,18 +58,18 @@ const getProducts = asyncHandler(async (req, res) => {
         filter.type = req.query.type;
     }
 
-    let sortOption = { createdAt: -1 }
-    
-    if (req.query.sort === "price_asc") {
-        sortOption = { price: 1 }
+    let sortOption = { createdAt: -1 };
+
+    if (req.query.sort === 'price_asc') {
+        sortOption = { price: 1 };
     }
 
-    if (req.query.sort === "price_desc") {
-        sortOption = { price: -1 }
+    if (req.query.sort === 'price_desc') {
+        sortOption = { price: -1 };
     }
 
-    if (req.query.sort === "oldest") {
-        sortOption = { createdAt: 1 }
+    if (req.query.sort === 'oldest') {
+        sortOption = { createdAt: 1 };
     }
 
     const products = await Product.find(filter)
@@ -141,18 +145,29 @@ const updateProduct = asyncHandler(async (req, res) => {
 });
 
 const deleteProduct = asyncHandler(async (req, res) => {
+    const { productId } = req.params;
 
-    const { productId } = req.params
+    const product = await Product.findById(productId);
 
-    const product = await Product.findById(productId)
-
-    if(!product){
-        throw new apiError(404, "Invalid product id")
+    if (!product) {
+        throw new apiError(404, 'Invalid product id');
     }
 
-    await product.deleteOne()
-    
-    return res.status(200).json(new apiResponse(200, null, "Product deleted successfully"))
-})
+    for (const image of product.images) {
+        await cloudinary.uploader.destroy(image.public_id);
+    }
 
-export { createProduct, getProducts, getProductsById, updateProduct, deleteProduct };
+    await product.deleteOne();
+
+    return res
+        .status(200)
+        .json(new apiResponse(200, null, 'Product deleted successfully'));
+});
+
+export {
+    createProduct,
+    getProducts,
+    getProductsById,
+    updateProduct,
+    deleteProduct,
+};

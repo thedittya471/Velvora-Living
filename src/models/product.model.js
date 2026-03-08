@@ -11,6 +11,12 @@ const productSchema = new mongoose.Schema(
             index: true,
         },
 
+        slug: {
+            type: String,
+            lowercase: true,
+            index: true,
+        },
+
         description: {
             type: String,
             required: [true, 'Product description is required'],
@@ -47,7 +53,14 @@ const productSchema = new mongoose.Schema(
 
         images: [
             {
-                type: String,
+                url: {
+                    type: String,
+                    required: true,
+                },
+                public_id: {
+                    type: String,
+                    required: true,
+                },
             },
         ],
 
@@ -69,7 +82,7 @@ const productSchema = new mongoose.Schema(
 );
 
 productSchema.pre('save', async function () {
-    if (!this.isModified("name")) return;
+    if (!this.isModified('name')) return;
     this.slug = slugify(this.name, { lower: true });
 });
 
