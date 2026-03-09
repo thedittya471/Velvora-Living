@@ -56,4 +56,21 @@ const createOrder = asyncHandler(async (req, res) => {
         .json(new apiResponse(201, order, 'Order created successfully'));
 });
 
-export { createOrder };
+const getUserOrders = asyncHandler(async (req, res) => {
+
+  const orders = await Order.find({ user: req.user._id })
+    .populate({
+      path: "orderItems.product",
+      select: "name images price"
+    })
+    .sort({ createdAt: -1 })
+
+  return res.status(200).json(
+    new apiResponse(200, orders, "User orders fetched successfully")
+  )
+
+})
+
+
+
+export { createOrder, getUserOrders };
