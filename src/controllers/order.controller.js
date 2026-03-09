@@ -69,4 +69,33 @@ const getUserOrders = asyncHandler(async (req, res) => {
         .json(new apiResponse(200, orders, 'User orders fetched successfully'));
 });
 
-export { createOrder, getUserOrders };
+const getOrderById = asyncHandler(async (req, res) => {
+    const { orderId } = req.params;
+
+    const order = await Order.findById(orderId)
+        .populate({
+            path: 'orderItems.product',
+            select: 'name images price',
+        })
+        .populate({
+            path: 'user',
+            select: 'name email',
+        });
+
+    if (!order) {
+        throw new apiError(404, 'Order not found');
+    }
+
+    if (
+        order.user._id.toString() !== req.user._id.toString() &&
+        req.user.role !== 'admin'
+    ) {
+        throw new apiError(403, 'Not authorized to access this order');
+    }
+
+    return res
+        .status(200)
+        .json(new apiResponse(200, order, 'Order fetched successfully'));
+});
+
+export { createOrder, getUserOrders, getOrderById };
