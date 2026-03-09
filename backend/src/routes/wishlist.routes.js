@@ -1,7 +1,14 @@
-import Router from 'express'
-import { addToWishlist } from '../controllers/wishlist.controller.js'
-import { jwtVerify } from '../middlewares/auth.middleware.js'
+import Router from 'express';
+import {
+    addToWishlist,
+    getWishlist,
+} from '../controllers/wishlist.controller.js';
+import { jwtVerify } from '../middlewares/auth.middleware.js';
 
-const router = Router()
+const router = Router();
 
-router.route('/add-to-wishlist').post(jwtVerify, addToWishlist)
+router.route('/add-to-wishlist').post(jwtVerify, addToWishlist);
+
+router.route('/get-wishlist').get(jwtVerify, getWishlist);
+
+export default router;

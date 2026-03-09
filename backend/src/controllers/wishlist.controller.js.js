@@ -35,4 +35,21 @@ const addToWishlist = asyncHandler(async (req, res) => {
         .json(new apiResponse(200, wishlist, 'Product added to wishlist'));
 });
 
-export { addToWishlist };
+const getWishlist = asyncHandler(async (req, res) => {
+    const wishlist = await Wishlist.findOne({ user: req.user._id }).populate({
+        path: 'products',
+        select: 'name price images stock',
+    });
+
+    if (!wishlist) {
+        return res
+            .status(200)
+            .json(new apiResponse(200, { products: [] }, 'Wishlist is empty'));
+    }
+
+    return res
+        .status(200)
+        .json(new apiResponse(200, wishlist, 'Wishlist fetched successfully'));
+});
+
+export { addToWishlist, getWishlist };
