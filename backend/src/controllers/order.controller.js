@@ -132,4 +132,30 @@ const getAllOrders = asyncHandler(async (req, res) => {
     );
 });
 
-export { createOrder, getUserOrders, getOrderById, getAllOrders };
+const updateOrderStatus = asyncHandler(async (req, res) => {
+
+  const { orderId } = req.params
+  const { status } = req.body
+
+  const order = await Order.findById(orderId)
+
+  if (!order) {
+    throw new apiError(404, "Order not found")
+  }
+
+  order.status = status
+
+  if (status === "delivered") {
+    order.isPaid = true
+    order.paidAt = new Date()
+  }
+
+  await order.save()
+
+  return res.status(200).json(
+    new apiResponse(200, order, "Order status updated successfully")
+  )
+
+})
+
+export { createOrder, getUserOrders, getOrderById, getAllOrders, updateOrderStatus };
