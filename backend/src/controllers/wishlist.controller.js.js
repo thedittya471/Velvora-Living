@@ -52,4 +52,26 @@ const getWishlist = asyncHandler(async (req, res) => {
         .json(new apiResponse(200, wishlist, 'Wishlist fetched successfully'));
 });
 
-export { addToWishlist, getWishlist };
+const removeFromWishlist = asyncHandler(async (req, res) => {
+
+  const { productId } = req.params
+
+  const wishlist = await Wishlist.findOne({ user: req.user._id })
+
+  if (!wishlist) {
+    throw new apiError(404, "Wishlist not found")
+  }
+
+  wishlist.products = wishlist.products.filter(
+    product => product.toString() !== productId
+  )
+
+  await wishlist.save()
+
+  return res.status(200).json(
+    new apiResponse(200, wishlist, "Product removed from wishlist")
+  )
+
+})
+
+export { addToWishlist, getWishlist, removeFromWishlist };
