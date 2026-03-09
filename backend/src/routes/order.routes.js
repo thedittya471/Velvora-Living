@@ -18,4 +18,8 @@ router.route('/get-order/:id').get(jwtVerify, getOrderById);
 
 router.route('./get-all-orders').get(jwtVerify, adminVerify, getAllOrders);
 
-router.route('/update-order-status/:id').put(jwtVerify, adminVerify, updateOrderStatus);
+router
+    .route('/update-order-status/:id')
+    .put(jwtVerify, adminVerify, updateOrderStatus);
+
+export default router;
