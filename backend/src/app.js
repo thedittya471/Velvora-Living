@@ -20,9 +20,12 @@ app.use(cookieParser());
 import userRoutes from './routes/user.routes.js';
 import productRoutes from './routes/product.routes.js';
 import cartRoutes from './routes/cart.routes.js'
+import orderRoutes from './routes/order.routes.js'
+import wishlistRoutes from './routes/wishlist.routes.js'
 
 app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/products', productRoutes);
 app.use('/api/v1/cart', cartRoutes)
-
+app.use('/api/v1/orders', orderRoutes)
+app.use('/api/v1/wishlist', wishlistRoutes)
 export { app };
