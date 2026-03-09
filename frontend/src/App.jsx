@@ -10,16 +10,19 @@ import PlaceOrder from './pages/PlaceOrder'
 import Orders from './pages/Orders'
 import Login from './pages/Login'
 import SignUp from './pages/SignUp'
+import Wishlist from './pages/Wishlist'
+import Navbar from './components/Navbar'
  
 const App = () => {
   return (
     <div className='px-4 sm:px[5vw] md:px-[7vw] lg:px-[9vw]'>
-      
+      <Navbar />
       <Routes>
 
           <Route path='/' element={ <Home /> } />
           <Route path='/collection' element={ <Collection /> } />
           <Route path='/about' element={ <About /> } />
+          <Route path='/wishlist' element={ <Wishlist /> } />
           <Route path='/contact' element={ <Contact /> } />
           <Route path='/product/:productId' element={ <Product /> } />
           <Route path='/cart' element={ <Cart /> } />
