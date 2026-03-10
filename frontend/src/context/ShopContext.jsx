@@ -1,6 +1,7 @@
 import { createContext, useState, useEffect } from "react";
 import axios from 'axios'
 
+
 export const ShopContext = createContext();
 
 const ShopContextProvider = (props) => {
@@ -10,14 +11,18 @@ const ShopContextProvider = (props) => {
 
 
     const [products, setProducts] = useState([]);
+    const [cart, setCart] = useState([])
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null)
 
+    const API = "https://velvora-living-backend.vercel.app/api/v1";
+
+    // Fetch products
     useEffect(() => {
         const fetchProducts = async () => {
             try {
                 setLoading(true);
-                const response = await axios.get('https://velvora-living-backend.vercel.app/api/v1/products/get-products');
+                const response = await axios.get(`${API}/products/get-products`);
                 setProducts(response.data.data.products);
             } catch (error) {
                 setError(error.message);
@@ -34,8 +39,7 @@ const ShopContextProvider = (props) => {
         products,
         loading,
         error,
-        currency,
-        delivery_fee
+        currency
     }
 
     return (
@@ -44,5 +48,7 @@ const ShopContextProvider = (props) => {
         </ShopContext.Provider>
     )
 }
+
+
 
 export default ShopContextProvider;
