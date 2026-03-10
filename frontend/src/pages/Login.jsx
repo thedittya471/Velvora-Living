@@ -26,8 +26,8 @@ const Login = () => {
       }
 
       const res = await axios.post('https://velvora-living-backend.vercel.app/api/v1/users/login', payload)
-      const accessToken = res?.data?.data.accessToken
-      const refreshToken = res?.data?.data?.data.refreshToken
+      const accessToken = res?.data?.data?.accessToken
+      const refreshToken = res?.data?.data?.refreshToken
       if (!accessToken) throw new Error('No access token returned')
 
       localStorage.setItem('token', accessToken)
