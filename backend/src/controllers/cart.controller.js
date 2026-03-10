@@ -12,18 +12,31 @@ const addToCart = asyncHandler(async (req, res) => {
     const product = await Product.findById(productId);
     if (!product) throw new apiError(404, 'Invalid product id');
 
+    // support different product field names safely
+    const productName = product?.name || product?.title || product?.productName;
+    if (!productName) {
+        throw new apiError(400, 'Product name is missing in product document');
+    }
+
+    // normalize images to string[]
+    const productImages = Array.isArray(product?.images)
+        ? product.images.map((img) => (typeof img === 'string' ? img : img?.url)).filter(Boolean)
+        : [];
+
     let cart = await Cart.findOne({ user: req.user._id });
 
     if (!cart) {
         cart = await Cart.create({
             user: req.user._id,
-            items: [{
-                product: product._id,
-                name: product.name,
-                images: product.images || [],
-                quantity: 1,
-                price: product.price
-            }]
+            items: [
+                {
+                    product: product._id,
+                    name: productName,
+                    images: productImages,
+                    quantity: 1,
+                    price: product.price,
+                },
+            ],
         });
     } else {
         const itemIndex = cart.items.findIndex(
@@ -32,16 +45,16 @@ const addToCart = asyncHandler(async (req, res) => {
 
         if (itemIndex > -1) {
             cart.items[itemIndex].quantity += 1;
-            cart.items[itemIndex].name = product.name;
-            cart.items[itemIndex].images = product.images || [];
+            cart.items[itemIndex].name = productName;
+            cart.items[itemIndex].images = productImages;
             cart.items[itemIndex].price = product.price;
         } else {
             cart.items.push({
                 product: product._id,
-                name: product.name,
-                images: product.images || [],
+                name: productName,
+                images: productImages,
                 quantity: 1,
-                price: product.price
+                price: product.price,
             });
         }
 
