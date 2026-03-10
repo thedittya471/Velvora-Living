@@ -7,28 +7,23 @@ import { apiResponse } from '../utils/apiResponse.js';
 const addToCart = asyncHandler(async (req, res) => {
     const { productId } = req.body;
 
-    if (!productId) {
-        throw new apiError(400, 'Product id is required');
-    }
+    if (!productId) throw new apiError(400, 'Product id is required');
 
     const product = await Product.findById(productId);
-
-    if (!product) {
-        throw new apiError(404, 'Invalid product id');
-    }
+    if (!product) throw new apiError(404, 'Invalid product id');
 
     let cart = await Cart.findOne({ user: req.user._id });
 
     if (!cart) {
         cart = await Cart.create({
             user: req.user._id,
-            items: [
-                {
-                    product: productId,
-                    quantity: 1,
-                    price: product.price,
-                },
-            ],
+            items: [{
+                product: product._id,
+                name: product.name,
+                images: product.images || [],
+                quantity: 1,
+                price: product.price
+            }]
         });
     } else {
         const itemIndex = cart.items.findIndex(
@@ -37,11 +32,16 @@ const addToCart = asyncHandler(async (req, res) => {
 
         if (itemIndex > -1) {
             cart.items[itemIndex].quantity += 1;
+            cart.items[itemIndex].name = product.name;
+            cart.items[itemIndex].images = product.images || [];
+            cart.items[itemIndex].price = product.price;
         } else {
             cart.items.push({
-                product: productId,
+                product: product._id,
+                name: product.name,
+                images: product.images || [],
                 quantity: 1,
-                price: product.price,
+                price: product.price
             });
         }
 
