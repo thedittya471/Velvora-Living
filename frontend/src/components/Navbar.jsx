@@ -14,23 +14,29 @@ const Navbar = () => {
     const navigate = useNavigate()
 
     const handleLogout = async () => {
-        try {
-            const token = localStorage.getItem('token')
+    const token = localStorage.getItem('token')
+
+    try {
+        if (token) {
             await axios.post(
                 'https://velvora-living-backend.vercel.app/api/v1/users/logout',
                 {},
                 { headers: { Authorization: `Bearer ${token}` } }
             )
-        } catch (err) {
-            console.error('Logout error:', err)
-        } finally {
-            // always clear even if API fails
-            localStorage.removeItem('token')
-            localStorage.removeItem('refreshToken')
-            console.log('User logged out')
-            navigate('/')
         }
+    } catch (err) {
+        console.error('Logout error:', err?.response?.data?.message || err.message)
+    } finally {
+        // clear all auth/user-related local state
+        localStorage.removeItem('token')
+        localStorage.removeItem('refreshToken')
+        localStorage.removeItem('currentUser')
+        localStorage.removeItem('posts')
+        localStorage.removeItem('users')
+
+        navigate('/login')
     }
+}
 
     return (
         <div className='flex items-center justify-between py-5 font-medium'>
