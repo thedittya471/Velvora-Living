@@ -33,7 +33,9 @@ const ShopContextProvider = (props) => {
     const value = {
         products,
         loading,
-        error
+        error,
+        currency,
+        delivery_fee
     }
 
     return (
