@@ -17,7 +17,7 @@ const ShopContextProvider = (props) => {
         const fetchProducts = async () => {
             try {
                 setLoading(true);
-                const response = await axios.get('http://localhost:8000/api/v1/products/get-products')
+                const response = await axios.get('https://velvora-living-backend.vercel.app/api/v1/products/get-products');
                 setProducts(response.data.data.products);
             } catch (error) {
                 setError(error.message);
