@@ -13,7 +13,7 @@ const Footer = () => {
                 </div>
 
                 <div>
-                    <p className='text-xl font-medium mb-5'>COMPANY</p>
+                    <p className='text-xl font-medium mb-5 mt-4'>COMPANY</p>
                     <ul className='flex flex-col gap-1 text-gray-600'>
                         <li>Home</li>
                         <li>About Us</li>
@@ -23,7 +23,7 @@ const Footer = () => {
                 </div>
 
                 <div>
-                    <p className='text-xl font-medium mb-5'>GET IN TOUCH</p>
+                    <p className='text-xl font-medium mb-5 mt-4'>GET IN TOUCH</p>
                     <ul className='flex flex-col gap-1 text-gray-600'>
                         <li>+91 8825xxxxx6</li>
                         <li>contact@velvoraliving.com</li>
