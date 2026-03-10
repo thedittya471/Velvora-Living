@@ -60,18 +60,6 @@ const getProducts = asyncHandler(async (req, res) => {
 
     let sortOption = { createdAt: -1 };
 
-    if (req.query.sort === 'price_asc') {
-        sortOption = { price: 1 };
-    }
-
-    if (req.query.sort === 'price_desc') {
-        sortOption = { price: -1 };
-    }
-
-    if (req.query.sort === 'oldest') {
-        sortOption = { createdAt: 1 };
-    }
-
     const products = await Product.find(filter)
         .skip(skip)
         .limit(limit)
