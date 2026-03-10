@@ -12,6 +12,7 @@ import Login from './pages/Login'
 import SignUp from './pages/SignUp'
 import Wishlist from './pages/Wishlist'
 import Navbar from './components/Navbar'
+import Footer from './components/Footer'
  
 const App = () => {
   return (
@@ -32,6 +33,7 @@ const App = () => {
           <Route path='/signUp' element={ <SignUp /> } />
 
       </Routes>
+      <Footer />
 
     </div>
   )
