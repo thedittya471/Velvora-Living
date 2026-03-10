@@ -16,3 +16,5 @@ connectDb()
         console.log('Failed to connect to DB', error);
         process.exit(1);
     });
+
+export default app;
