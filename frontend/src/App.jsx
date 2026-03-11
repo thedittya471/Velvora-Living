@@ -14,11 +14,13 @@ import Wishlist from './pages/Wishlist'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
 import ProtectedRoute from './utils/ProtectedRoute'
+import { Analytics } from "@vercel/analytics/react"
  
 const App = () => {
   return (
     <div className='px-4 sm:px[5vw] md:px-[7vw] lg:px-[9vw]'>
       <Navbar />
+      <Analytics />
       <Routes>
 
           <Route path='/' element={ <Home /> } />
