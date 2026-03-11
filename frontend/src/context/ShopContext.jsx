@@ -3,7 +3,9 @@ import axios from 'axios'
 
 export const ShopContext = createContext();
 
-const ShopContextProvider = (props) => {
+const API = "https://velvora-living-backend.vercel.app/api/v1";
+
+const ShopContextProvider = ({ children }) => {
     const currency = 'Rs.'
     const delivery_fee = 60;
 
@@ -11,18 +13,14 @@ const ShopContextProvider = (props) => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null)
 
-    const [currentUser, setCurrentUser] = useState(null)
     const [userLoading, setUserLoading] = useState(true)
 
     const [isAuthenticated, setIsAuthenticated] = useState(false)
     const [accessToken, setAccessToken] = useState(() => sessionStorage.getItem('accessToken') || null)
     const [refreshToken, setRefreshToken] = useState(() => sessionStorage.getItem('refreshToken') || null)
 
-    // cart state
     const [cartItems, setCartItems] = useState([])
     const [cartLoading, setCartLoading] = useState(false)
-
-    const API = "https://velvora-living-backend.vercel.app/api/v1";
 
     const authConfig = (tokenOverride = null) => ({
         withCredentials: true,
@@ -68,7 +66,7 @@ const ShopContextProvider = (props) => {
                 throw err
             }
 
-            const canTryRefresh = Boolean(isAuthenticated || currentUser || refreshToken || refreshTokenOverride)
+            const canTryRefresh = Boolean(refreshToken || refreshTokenOverride)
             if (!canTryRefresh) {
                 throw err
             }
@@ -82,7 +80,6 @@ const ShopContextProvider = (props) => {
         }
     }
 
-    // Fetch products
     useEffect(() => {
         const fetchProducts = async () => {
             try {
@@ -99,21 +96,17 @@ const ShopContextProvider = (props) => {
         fetchProducts()
     }, [])
 
-    // Bootstrap auth state from backend cookie session
     useEffect(() => {
         const initAuth = async () => {
             if (!accessToken && !refreshToken) {
-                setCurrentUser(null)
                 setIsAuthenticated(false)
                 setUserLoading(false)
                 return
             }
 
-            const user = await fetchCurrentUser()
-            if (user) {
-                await fetchCart()
-            }
+            await refreshAuthState()
         }
+
         initAuth()
     }, [])
 
@@ -125,14 +118,12 @@ const ShopContextProvider = (props) => {
                 refreshTokenOverride
             )
             const user = res?.data?.data || null
-            setCurrentUser(user)
             setIsAuthenticated(Boolean(user))
             return user
         } catch (err) {
             if (err?.response?.status !== 401) {
                 console.error('Error fetching current user:', err)
             }
-            setCurrentUser(null)
             setIsAuthenticated(false)
             setSessionTokens(null, null)
             return null
@@ -141,7 +132,6 @@ const ShopContextProvider = (props) => {
         }
     }
 
-    // cart methods
     const fetchCart = async (tokenOverride = null, refreshTokenOverride = null) => {
         try {
             setCartLoading(true)
@@ -168,16 +158,19 @@ const ShopContextProvider = (props) => {
     }
 
     const clearAuthState = () => {
-        setCurrentUser(null)
         setIsAuthenticated(false)
         setSessionTokens(null, null)
         setCartItems([])
     }
 
+    const normalizeProductId = (productId) => (
+        typeof productId === 'object' ? productId?._id : productId
+    )
+
     const getProductStock = (productId) => {
         if (!productId) return null
 
-        const normalizedId = typeof productId === 'object' ? productId?._id : productId
+        const normalizedId = normalizeProductId(productId)
         const product = products.find((item) => item?._id === normalizedId)
         if (product?.stock === undefined || product?.stock === null) return null
 
@@ -187,9 +180,9 @@ const ShopContextProvider = (props) => {
     const getCartItemQuantity = (productId) => {
         if (!productId) return 0
 
-        const normalizedId = typeof productId === 'object' ? productId?._id : productId
+        const normalizedId = normalizeProductId(productId)
         const cartItem = cartItems.find((item) => {
-            const itemProductId = typeof item?.product === 'object' ? item?.product?._id : item?.product
+            const itemProductId = normalizeProductId(item?.product)
             return itemProductId === normalizedId
         })
 
@@ -205,42 +198,35 @@ const ShopContextProvider = (props) => {
     }
 
     const addToCart = async (productId) => {
-    if (!productId) {
-        console.error('addToCart: productId missing')
-        return
-    }
+        if (!productId) {
+            console.error('addToCart: productId missing')
+            return
+        }
 
-    if (!isAuthenticated) {
-        console.error('addToCart: user not logged in')
-        alert('Please login to add items to cart')
-        return
-    }
+        if (!isAuthenticated) {
+            alert('Please login to add items to cart')
+            return
+        }
 
-    try {
-        const res = await requestWithAuthRetry(() =>
-            axios.post(
-                `${API}/cart/add-to-cart`,
-                { productId },
-                authConfig()
+        try {
+            const res = await requestWithAuthRetry(() =>
+                axios.post(
+                    `${API}/cart/add-to-cart`,
+                    { productId },
+                    authConfig()
+                )
             )
-        )
 
-        // backend returns full cart in data
-        const items = res?.data?.data?.items || []
-        setCartItems(items)
-
-        // optional hard refresh from server
-        await fetchCart()
-    } catch (err) {
-        console.error('Add to cart error:', err?.response?.data || err.message)
-        const message = err?.response?.data?.message
-        if (message) {
-            alert(message)
+            setCartItems(res?.data?.data?.items || [])
+        } catch (err) {
+            console.error('Add to cart error:', err?.response?.data || err.message)
+            const message = err?.response?.data?.message
+            if (message) {
+                alert(message)
+            }
         }
     }
-}
 
-    // quantity must be 1 or -1 (as per your backend)
     const updateCartItem = async (productId, quantity) => {
         if (!isAuthenticated) return
         try {
@@ -277,15 +263,12 @@ const ShopContextProvider = (props) => {
         currency,
         delivery_fee,
 
-        currentUser,
         userLoading,
 
         isAuthenticated,
         accessToken,
-        setIsAuthenticated,
         setSessionTokens,
         refreshAccessToken,
-        fetchCurrentUser,
         refreshAuthState,
         clearAuthState,
 
@@ -304,7 +287,7 @@ const ShopContextProvider = (props) => {
 
     return (
         <ShopContext.Provider value={value}>
-            {props.children}
+            {children}
         </ShopContext.Provider>
     )
 }
