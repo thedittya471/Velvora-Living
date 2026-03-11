@@ -1,13 +1,14 @@
 import React, { useEffect, useState, useContext } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { FaStar } from "react-icons/fa";
 import { CiStar } from "react-icons/ci";
 import { ShopContext } from '../context/ShopContext';
 
 const Product = () => {
-  const { currency, addToCart } = useContext(ShopContext)
+  const { currency, addToCart, token } = useContext(ShopContext)
   const { productId } = useParams()
+  const navigate = useNavigate()
   const [productData, setProductData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -35,6 +36,10 @@ const Product = () => {
   }, [productId])
 
   const handleAddToCart = async () => {
+    if (!token) {
+      navigate('/login')
+      return
+    }
     if (!productData?._id) return
     await addToCart(productData._id)
   }

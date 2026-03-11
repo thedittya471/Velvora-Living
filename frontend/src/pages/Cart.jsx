@@ -1,8 +1,10 @@
 import React, { useContext } from 'react'
+import { useNavigate } from 'react-router-dom'
 import Title from '../components/Title'
 import { ShopContext } from '../context/ShopContext'
 
 const Cart = () => {
+  const navigate = useNavigate()
   const {
     cartItems,
     cartLoading,
@@ -125,12 +127,20 @@ const Cart = () => {
               <span>{currency} {total}</span>
             </div>
 
-            <button
-              onClick={clearCart}
-              className='mt-4 border border-black px-5 py-2 text-sm'
-            >
-              CLEAR CART
-            </button>
+            <div className='mt-4 flex gap-3'>
+              <button
+                onClick={clearCart}
+                className='border border-black px-5 py-2 text-sm cursor-pointer'
+              >
+                CLEAR CART
+              </button>
+              <button
+                onClick={() => navigate('/place-order')}
+                className='bg-black text-white px-5 py-2 text-sm cursor-pointer'
+              >
+                CHECKOUT
+              </button>
+            </div>
           </div>
         </div>
       )}

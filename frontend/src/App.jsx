@@ -13,6 +13,7 @@ import SignUp from './pages/SignUp'
 import Wishlist from './pages/Wishlist'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
+import ProtectedRoute from './utils/ProtectedRoute'
  
 const App = () => {
   return (
@@ -23,12 +24,12 @@ const App = () => {
           <Route path='/' element={ <Home /> } />
           <Route path='/collection' element={ <Collection /> } />
           <Route path='/about' element={ <About /> } />
-          <Route path='/wishlist' element={ <Wishlist /> } />
+          <Route path='/wishlist' element={ <ProtectedRoute><Wishlist /></ProtectedRoute> } />
           <Route path='/contact' element={ <Contact /> } />
           <Route path='/product/:productId' element={ <Product /> } />
-          <Route path='/cart' element={ <Cart /> } />
-          <Route path='/place-order' element={ <PlaceOrder /> } />
-          <Route path='/orders' element={ <Orders /> } />
+          <Route path='/cart' element={ <ProtectedRoute><Cart /></ProtectedRoute> } />
+          <Route path='/place-order' element={ <ProtectedRoute><PlaceOrder /></ProtectedRoute> } />
+          <Route path='/orders' element={ <ProtectedRoute><Orders /></ProtectedRoute> } />
           <Route path='/login' element={ <Login /> } />
           <Route path='/signUp' element={ <SignUp /> } />
 
