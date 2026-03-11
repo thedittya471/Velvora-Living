@@ -5,7 +5,7 @@ import { ShopContext } from '../context/ShopContext'
 import { useNavigate } from 'react-router-dom'
 
 const PlaceOrder = () => {
-  const { cartItems, currency, delivery_fee, getCartTotal, token, fetchCart } = useContext(ShopContext)
+  const { cartItems, currency, delivery_fee, getCartTotal, isAuthenticated, fetchCart, refreshAccessToken } = useContext(ShopContext)
   const navigate = useNavigate()
 
   const [formData, setFormData] = useState({
@@ -39,7 +39,7 @@ const PlaceOrder = () => {
   const onSubmitHandler = async (event) => {
     event.preventDefault()
 
-    if (!token) {
+    if (!isAuthenticated) {
       navigate('/login')
       return
     }
@@ -50,25 +50,38 @@ const PlaceOrder = () => {
     }
 
     try {
-      await axios.post(
-        'https://velvora-living-backend.vercel.app/api/v1/orders/create-order',
-        {
-          shippingAddress: {
-            address: formData.address,
-            city: formData.city,
-            state: formData.state,
-            postalCode: formData.postalCode,
-            country: formData.country,
-            phone: formData.phone
-          },
-          paymentMethod: paymentMethodMap[method] || 'COD'
+      const payload = {
+        shippingAddress: {
+          address: formData.address,
+          city: formData.city,
+          state: formData.state,
+          postalCode: formData.postalCode,
+          country: formData.country,
+          phone: formData.phone
         },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
+        paymentMethod: paymentMethodMap[method] || 'COD'
+      }
+
+      try {
+        await axios.post(
+          'https://velvora-living-backend.vercel.app/api/v1/orders/create-order',
+          payload,
+          { withCredentials: true }
+        )
+      } catch (error) {
+        if (error?.response?.status === 401) {
+          const refreshed = await refreshAccessToken()
+          if (!refreshed) throw error
+
+          await axios.post(
+            'https://velvora-living-backend.vercel.app/api/v1/orders/create-order',
+            payload,
+            { withCredentials: true }
+          )
+        } else {
+          throw error
         }
-      )
+      }
 
       await fetchCart()
       navigate('/orders')

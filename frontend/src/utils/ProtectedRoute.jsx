@@ -3,9 +3,13 @@ import { Navigate } from 'react-router-dom'
 import { ShopContext } from '../context/ShopContext'
 
 const ProtectedRoute = ({ children }) => {
-  const { token } = useContext(ShopContext)
+  const { isAuthenticated, userLoading } = useContext(ShopContext)
 
-  if (!token) {
+  if (userLoading) {
+    return null
+  }
+
+  if (!isAuthenticated) {
     return <Navigate to='/login' replace />
   }
 

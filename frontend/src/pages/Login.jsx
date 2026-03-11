@@ -5,7 +5,7 @@ import { ShopContext } from '../context/ShopContext'
 
 const Login = () => {
   const navigate = useNavigate()
-  const { setToken } = useContext(ShopContext)
+  const { refreshAuthState, setSessionTokens } = useContext(ShopContext)
 
   const [formData, setFormData] = useState({
     email: '',
@@ -33,17 +33,12 @@ const Login = () => {
         password: formData.password
       }
 
-      const res = await axios.post(`${API}/users/login`, payload)
+      const res = await axios.post(`${API}/users/login`, payload, { withCredentials: true })
+      const accessToken = res?.data?.data?.accessToken || null
+      const refreshToken = res?.data?.data?.refreshToken || null
 
-      const accessToken = res?.data?.data?.accessToken
-      const refreshToken = res?.data?.data?.refreshToken
-
-      if (!accessToken) throw new Error('No access token returned')
-
-      localStorage.setItem('token', accessToken)
-      if (refreshToken) localStorage.setItem('refreshToken', refreshToken)
-
-      setToken(accessToken) // updates context immediately
+      setSessionTokens(accessToken, refreshToken)
+      await refreshAuthState(accessToken, refreshToken)
       navigate('/cart')
     } catch (err) {
       setError(err?.response?.data?.message || err?.message || 'Login failed')

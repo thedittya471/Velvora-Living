@@ -14,7 +14,9 @@ const ShopContextProvider = (props) => {
     const [currentUser, setCurrentUser] = useState(null)
     const [userLoading, setUserLoading] = useState(true)
 
-    const [token, setToken] = useState(localStorage.getItem('token') || null)
+    const [isAuthenticated, setIsAuthenticated] = useState(false)
+    const [accessToken, setAccessToken] = useState(() => sessionStorage.getItem('accessToken') || null)
+    const [refreshToken, setRefreshToken] = useState(() => sessionStorage.getItem('refreshToken') || null)
 
     // cart state
     const [cartItems, setCartItems] = useState([])
@@ -22,15 +24,63 @@ const ShopContextProvider = (props) => {
 
     const API = "https://velvora-living-backend.vercel.app/api/v1";
 
-    const authConfig = () => ({
-        headers: { Authorization: `Bearer ${token}` }
+    const authConfig = (tokenOverride = null) => ({
+        withCredentials: true,
+        ...((tokenOverride || accessToken) ? { headers: { Authorization: `Bearer ${tokenOverride || accessToken}` } } : {})
     })
 
-    // keep token persisted
-    useEffect(() => {
-        if (token) localStorage.setItem('token', token)
-        else localStorage.removeItem('token')
-    }, [token])
+    const setSessionTokens = (nextAccessToken, nextRefreshToken) => {
+        const access = nextAccessToken || null
+        const refresh = nextRefreshToken || null
+
+        setAccessToken(access)
+        setRefreshToken(refresh)
+
+        if (access) sessionStorage.setItem('accessToken', access)
+        else sessionStorage.removeItem('accessToken')
+
+        if (refresh) sessionStorage.setItem('refreshToken', refresh)
+        else sessionStorage.removeItem('refreshToken')
+    }
+
+    const refreshAccessToken = async (refreshTokenOverride = null) => {
+        try {
+            const tokenToUse = refreshTokenOverride || refreshToken
+            const payload = tokenToUse ? { refreshToken: tokenToUse } : {}
+            const res = await axios.post(`${API}/users/refresh-token`, payload, authConfig())
+            const newAccessToken = res?.data?.data?.accessToken || null
+            const newRefreshToken = res?.data?.data?.refreshToken || tokenToUse || null
+
+            if (!newAccessToken) return null
+
+            setSessionTokens(newAccessToken, newRefreshToken)
+            return newAccessToken
+        } catch {
+            return null
+        }
+    }
+
+    const requestWithAuthRetry = async (requestFn, refreshTokenOverride = null) => {
+        try {
+            return await requestFn()
+        } catch (err) {
+            if (err?.response?.status !== 401) {
+                throw err
+            }
+
+            const canTryRefresh = Boolean(isAuthenticated || currentUser || refreshToken || refreshTokenOverride)
+            if (!canTryRefresh) {
+                throw err
+            }
+
+            const refreshed = await refreshAccessToken(refreshTokenOverride)
+            if (!refreshed) {
+                throw err
+            }
+
+            return await requestFn()
+        }
+    }
 
     // Fetch products
     useEffect(() => {
@@ -49,46 +99,79 @@ const ShopContextProvider = (props) => {
         fetchProducts()
     }, [])
 
-    // Fetch current user + cart whenever token changes
+    // Bootstrap auth state from backend cookie session
     useEffect(() => {
-        if (token) {
-            fetchCurrentUser()
-            fetchCart()
-        } else {
-            setCurrentUser(null)
-            setCartItems([])
-            setUserLoading(false)
-        }
-    }, [token])
+        const initAuth = async () => {
+            if (!accessToken && !refreshToken) {
+                setCurrentUser(null)
+                setIsAuthenticated(false)
+                setUserLoading(false)
+                return
+            }
 
-    const fetchCurrentUser = async () => {
+            const user = await fetchCurrentUser()
+            if (user) {
+                await fetchCart()
+            }
+        }
+        initAuth()
+    }, [])
+
+    const fetchCurrentUser = async (tokenOverride = null, refreshTokenOverride = null) => {
         try {
             setUserLoading(true)
-            const res = await axios.get(`${API}/users/current-user`, authConfig())
-            setCurrentUser(res?.data?.data || null)
+            const res = await requestWithAuthRetry(
+                () => axios.get(`${API}/users/current-user`, authConfig(tokenOverride)),
+                refreshTokenOverride
+            )
+            const user = res?.data?.data || null
+            setCurrentUser(user)
+            setIsAuthenticated(Boolean(user))
+            return user
         } catch (err) {
-            console.error('Error fetching current user:', err)
+            if (err?.response?.status !== 401) {
+                console.error('Error fetching current user:', err)
+            }
             setCurrentUser(null)
-            localStorage.removeItem('token')
-            localStorage.removeItem('refreshToken')
-            setToken(null)
+            setIsAuthenticated(false)
+            setSessionTokens(null, null)
+            return null
         } finally {
             setUserLoading(false)
         }
     }
 
     // cart methods
-    const fetchCart = async () => {
-        if (!token) return
+    const fetchCart = async (tokenOverride = null, refreshTokenOverride = null) => {
         try {
             setCartLoading(true)
-            const res = await axios.get(`${API}/cart/get-cart`, authConfig())
+            const res = await requestWithAuthRetry(
+                () => axios.get(`${API}/cart/get-cart`, authConfig(tokenOverride)),
+                refreshTokenOverride
+            )
             setCartItems(res?.data?.data?.items || [])
         } catch (err) {
             console.error('Error fetching cart:', err)
+            setCartItems([])
         } finally {
             setCartLoading(false)
         }
+    }
+
+    const refreshAuthState = async (tokenOverride = null, refreshTokenOverride = null) => {
+        const user = await fetchCurrentUser(tokenOverride, refreshTokenOverride)
+        if (user) {
+            await fetchCart(tokenOverride, refreshTokenOverride)
+        } else {
+            setCartItems([])
+        }
+    }
+
+    const clearAuthState = () => {
+        setCurrentUser(null)
+        setIsAuthenticated(false)
+        setSessionTokens(null, null)
+        setCartItems([])
     }
 
     const addToCart = async (productId) => {
@@ -97,17 +180,19 @@ const ShopContextProvider = (props) => {
         return
     }
 
-    if (!token) {
-        console.error('addToCart: user not logged in (token missing)')
+    if (!isAuthenticated) {
+        console.error('addToCart: user not logged in')
         alert('Please login to add items to cart')
         return
     }
 
     try {
-        const res = await axios.post(
-            `${API}/cart/add-to-cart`,
-            { productId },
-            authConfig()
+        const res = await requestWithAuthRetry(() =>
+            axios.post(
+                `${API}/cart/add-to-cart`,
+                { productId },
+                authConfig()
+            )
         )
 
         // backend returns full cart in data
@@ -123,9 +208,11 @@ const ShopContextProvider = (props) => {
 
     // quantity must be 1 or -1 (as per your backend)
     const updateCartItem = async (productId, quantity) => {
-        if (!token) return
+        if (!isAuthenticated) return
         try {
-            const res = await axios.put(`${API}/cart/update-cart-item/${productId}`, { quantity }, authConfig())
+            const res = await requestWithAuthRetry(() =>
+                axios.put(`${API}/cart/update-cart-item/${productId}`, { quantity }, authConfig())
+            )
             setCartItems(res?.data?.data?.items || [])
         } catch (err) {
             console.error('Update cart error:', err)
@@ -133,9 +220,9 @@ const ShopContextProvider = (props) => {
     }
 
     const clearCart = async () => {
-        if (!token) return
+        if (!isAuthenticated) return
         try {
-            const res = await axios.delete(`${API}/cart/clear-cart`, authConfig())
+            const res = await requestWithAuthRetry(() => axios.delete(`${API}/cart/clear-cart`, authConfig()))
             setCartItems(res?.data?.data?.items || [])
         } catch (err) {
             console.error('Clear cart error:', err)
@@ -155,9 +242,14 @@ const ShopContextProvider = (props) => {
         currentUser,
         userLoading,
 
-        token,
-        setToken,
+        isAuthenticated,
+        accessToken,
+        setIsAuthenticated,
+        setSessionTokens,
+        refreshAccessToken,
         fetchCurrentUser,
+        refreshAuthState,
+        clearAuthState,
 
         cartItems,
         cartLoading,

@@ -13,30 +13,38 @@ const Navbar = () => {
 
     const [visible, setVisible] = useState(false)
     const navigate = useNavigate()
-    const { getCartCount } = useContext(ShopContext)
+    const { getCartCount, clearAuthState, refreshAccessToken, accessToken } = useContext(ShopContext)
     const cartTotal = getCartCount ? getCartCount() : 0
 
     const handleLogout = async () => {
-    const token = localStorage.getItem('token')
+    const logoutRequest = (token) => axios.post(
+        'https://velvora-living-backend.vercel.app/api/v1/users/logout',
+        {},
+        {
+            withCredentials: true,
+            ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {})
+        }
+    )
 
     try {
-        if (token) {
-            await axios.post(
-                'https://velvora-living-backend.vercel.app/api/v1/users/logout',
-                {},
-                { headers: { Authorization: `Bearer ${token}` } }
-            )
-        }
+        await logoutRequest(accessToken)
     } catch (err) {
-        console.error('Logout error:', err?.response?.data?.message || err.message)
+        if (err?.response?.status === 401) {
+            const newAccessToken = await refreshAccessToken()
+            if (newAccessToken) {
+                try {
+                    await logoutRequest(newAccessToken)
+                } catch (retryErr) {
+                    if (retryErr?.response?.status !== 401) {
+                        console.error('Logout retry error:', retryErr?.response?.data?.message || retryErr.message)
+                    }
+                }
+            }
+        } else {
+            console.error('Logout error:', err?.response?.data?.message || err.message)
+        }
     } finally {
-        // clear all auth/user-related local state
-        localStorage.removeItem('token')
-        localStorage.removeItem('refreshToken')
-        localStorage.removeItem('currentUser')
-        localStorage.removeItem('posts')
-        localStorage.removeItem('users')
-
+        clearAuthState()
         navigate('/login')
     }
 }

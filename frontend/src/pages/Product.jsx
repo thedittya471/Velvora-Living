@@ -6,7 +6,7 @@ import { CiStar } from "react-icons/ci";
 import { ShopContext } from '../context/ShopContext';
 
 const Product = () => {
-  const { currency, addToCart, token } = useContext(ShopContext)
+  const { currency, addToCart, isAuthenticated } = useContext(ShopContext)
   const { productId } = useParams()
   const navigate = useNavigate()
   const [productData, setProductData] = useState(null)
@@ -36,7 +36,7 @@ const Product = () => {
   }, [productId])
 
   const handleAddToCart = async () => {
-    if (!token) {
+    if (!isAuthenticated) {
       navigate('/login')
       return
     }
