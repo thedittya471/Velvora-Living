@@ -8,6 +8,34 @@ import { apiResponse } from '../utils/apiResponse.js';
 const createOrder = asyncHandler(async (req, res) => {
     const { shippingAddress, paymentMethod } = req.body;
 
+    if (!shippingAddress) {
+        throw new apiError(400, 'Shipping address is required');
+    }
+
+    const requiredAddressFields = [
+        'address',
+        'city',
+        'state',
+        'postalCode',
+        'country',
+        'phone',
+    ];
+
+    for (const field of requiredAddressFields) {
+        if (!shippingAddress[field]?.toString().trim()) {
+            throw new apiError(400, `${field} is required in shipping address`);
+        }
+    }
+
+    const normalizedShippingAddress = {
+        address: shippingAddress.address.toString().trim(),
+        city: shippingAddress.city.toString().trim(),
+        state: shippingAddress.state.toString().trim(),
+        postalCode: shippingAddress.postalCode.toString().trim(),
+        country: shippingAddress.country.toString().trim(),
+        phone: shippingAddress.phone.toString().trim(),
+    };
+
     const cart = await Cart.findOne({ user: req.user._id }).populate(
         'items.product'
     );
@@ -43,7 +71,7 @@ const createOrder = asyncHandler(async (req, res) => {
     const order = await Order.create({
         user: req.user._id,
         orderItems,
-        shippingAddress,
+        shippingAddress: normalizedShippingAddress,
         paymentMethod,
         totalPrice,
     });
