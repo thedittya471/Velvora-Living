@@ -1,12 +1,12 @@
 import React, { useEffect, useState, useContext } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import axios from 'axios'
-import { FaStar } from "react-icons/fa";
+import { FaStar, FaHeart, FaRegHeart } from "react-icons/fa";
 import { CiStar } from "react-icons/ci";
 import { ShopContext } from '../context/ShopContext';
 
 const Product = () => {
-  const { currency, addToCart, isAuthenticated, getCartItemQuantity, isProductOutOfStock } = useContext(ShopContext)
+  const { currency, addToCart, isAuthenticated, getCartItemQuantity, isProductOutOfStock, addToWishlist, removeFromWishlist, isInWishlist } = useContext(ShopContext)
   const { productId } = useParams()
   const navigate = useNavigate()
   const [productData, setProductData] = useState(null)
@@ -42,6 +42,21 @@ const Product = () => {
     }
     if (!productData?._id) return
     await addToCart(productData._id)
+  }
+
+  const inWishlist = isInWishlist(productData?._id)
+
+  const handleToggleWishlist = async () => {
+    if (!isAuthenticated) {
+      navigate('/login')
+      return
+    }
+    if (!productData?._id) return
+    if (inWishlist) {
+      await removeFromWishlist(productData._id)
+    } else {
+      await addToWishlist(productData._id)
+    }
   }
 
   const cartQuantity = getCartItemQuantity(productData?._id)
@@ -88,13 +103,26 @@ const Product = () => {
             {remainingStock > 0 ? `${remainingStock} left in stock` : 'Out of stock'}
           </p>
 
-          <button
-            onClick={handleAddToCart}
-            disabled={isOutOfStock}
-            className={`px-8 py-3 text-sm ${isOutOfStock ? 'bg-gray-400 text-white cursor-not-allowed' : 'bg-black text-white active:bg-gray-700'}`}
-          >
-            {isOutOfStock ? 'OUT OF STOCK' : 'ADD TO CART'}
-          </button>
+          <div className='flex items-center gap-3'>
+            <button
+              onClick={handleAddToCart}
+              disabled={isOutOfStock}
+              className={`px-8 py-3 text-sm ${isOutOfStock ? 'bg-gray-400 text-white cursor-not-allowed' : 'bg-black text-white active:bg-gray-700'}`}
+            >
+              {isOutOfStock ? 'OUT OF STOCK' : 'ADD TO CART'}
+            </button>
+
+            <button
+              onClick={handleToggleWishlist}
+              className='flex items-center justify-center w-11 h-11 border border-gray-300 hover:border-red-400 transition-colors'
+              title={inWishlist ? 'Remove from wishlist' : 'Add to wishlist'}
+            >
+              {inWishlist
+                ? <FaHeart className='text-red-500' size={18} />
+                : <FaRegHeart className='text-gray-500' size={18} />
+              }
+            </button>
+          </div>
 
           <hr className='mt-8 sm:w-4/5' />
           <div className='text-sm text-gray-500 mt-5 flex flex-col gap-1'>

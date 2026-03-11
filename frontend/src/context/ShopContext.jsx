@@ -22,6 +22,9 @@ const ShopContextProvider = ({ children }) => {
     const [cartItems, setCartItems] = useState([])
     const [cartLoading, setCartLoading] = useState(false)
 
+    const [wishlistProducts, setWishlistProducts] = useState([])
+    const [wishlistLoading, setWishlistLoading] = useState(false)
+
     const authConfig = (tokenOverride = null) => ({
         withCredentials: true,
         ...((tokenOverride || accessToken) ? { headers: { Authorization: `Bearer ${tokenOverride || accessToken}` } } : {})
@@ -148,12 +151,32 @@ const ShopContextProvider = ({ children }) => {
         }
     }
 
+    const fetchWishlist = async (tokenOverride = null, refreshTokenOverride = null) => {
+        try {
+            setWishlistLoading(true)
+            const res = await requestWithAuthRetry(
+                () => axios.get(`${API}/wishlist/get-wishlist`, authConfig(tokenOverride)),
+                refreshTokenOverride
+            )
+            setWishlistProducts(res?.data?.data?.products || [])
+        } catch (err) {
+            console.error('Error fetching wishlist:', err)
+            setWishlistProducts([])
+        } finally {
+            setWishlistLoading(false)
+        }
+    }
+
     const refreshAuthState = async (tokenOverride = null, refreshTokenOverride = null) => {
         const user = await fetchCurrentUser(tokenOverride, refreshTokenOverride)
         if (user) {
-            await fetchCart(tokenOverride, refreshTokenOverride)
+            await Promise.all([
+                fetchCart(tokenOverride, refreshTokenOverride),
+                fetchWishlist(tokenOverride, refreshTokenOverride)
+            ])
         } else {
             setCartItems([])
+            setWishlistProducts([])
         }
     }
 
@@ -161,6 +184,7 @@ const ShopContextProvider = ({ children }) => {
         setIsAuthenticated(false)
         setSessionTokens(null, null)
         setCartItems([])
+        setWishlistProducts([])
     }
 
     const normalizeProductId = (productId) => (
@@ -256,6 +280,50 @@ const ShopContextProvider = ({ children }) => {
     const getCartCount = () => cartItems.reduce((sum, item) => sum + (item.quantity || 0), 0)
     const getCartTotal = () => cartItems.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 0), 0)
 
+    const isInWishlist = (productId) => {
+        if (!productId) return false
+        const normalizedId = normalizeProductId(productId)
+        return wishlistProducts.some((p) => {
+            const pId = typeof p === 'object' ? p?._id?.toString() : p?.toString()
+            return pId === normalizedId
+        })
+    }
+
+    const addToWishlist = async (productId) => {
+        if (!productId) return
+        if (!isAuthenticated) {
+            alert('Please login to add items to wishlist')
+            return
+        }
+        try {
+            await requestWithAuthRetry(() =>
+                axios.post(`${API}/wishlist/add-to-wishlist`, { productId }, authConfig())
+            )
+            await fetchWishlist()
+        } catch (err) {
+            console.error('Add to wishlist error:', err?.response?.data || err.message)
+            const message = err?.response?.data?.message
+            if (message) alert(message)
+        }
+    }
+
+    const removeFromWishlist = async (productId) => {
+        if (!productId || !isAuthenticated) return
+        try {
+            await requestWithAuthRetry(() =>
+                axios.delete(`${API}/wishlist/remove-from-wishlist/${productId}`, authConfig())
+            )
+            setWishlistProducts((prev) =>
+                prev.filter((p) => {
+                    const pId = typeof p === 'object' ? p?._id?.toString() : p?.toString()
+                    return pId !== productId?.toString()
+                })
+            )
+        } catch (err) {
+            console.error('Remove from wishlist error:', err)
+        }
+    }
+
     const value = {
         products,
         loading,
@@ -276,6 +344,13 @@ const ShopContextProvider = ({ children }) => {
         cartLoading,
         fetchCart,
         addToCart,
+
+        wishlistProducts,
+        wishlistLoading,
+        fetchWishlist,
+        addToWishlist,
+        removeFromWishlist,
+        isInWishlist,
         updateCartItem,
         clearCart,
         getCartCount,
