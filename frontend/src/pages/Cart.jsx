@@ -138,7 +138,7 @@ const Cart = () => {
 
       {cartItems?.length > 0 && (
         <div className='mt-8 flex justify-end'>
-          <div className='w-full sm:w-[420px] text-sm'>
+          <div className='w-full sm:w-105 text-sm'>
             <div className='flex justify-between py-1'>
               <span>Subtotal</span>
               <span>{currency} {subtotal}</span>
