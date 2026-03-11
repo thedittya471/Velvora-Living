@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useContext, useState } from 'react'
 import Logo from '../assets/logo.png'
 import { NavLink, Link, useNavigate } from 'react-router-dom'
 import { GoSearch } from "react-icons/go";
@@ -7,11 +7,14 @@ import { BsBag } from "react-icons/bs";
 import { HiOutlineBars3BottomRight } from "react-icons/hi2";
 import { IoMdArrowBack } from "react-icons/io";
 import axios from 'axios'
+import { ShopContext } from '../context/ShopContext'
 
 const Navbar = () => {
 
     const [visible, setVisible] = useState(false)
     const navigate = useNavigate()
+    const { getCartCount } = useContext(ShopContext)
+    const cartTotal = getCartCount ? getCartCount() : 0
 
     const handleLogout = async () => {
     const token = localStorage.getItem('token')
@@ -92,7 +95,7 @@ const Navbar = () => {
 
                 <Link to='/cart' className='relative'>
                     <BsBag className='w-5 min-w-5' size={20} />
-                    <p className='absolute -right-1.25 -bottom-1.25 w-4 text-center leading-4 bg-black text-white aspect-square rounded-full text-[8px] '>10</p>
+                    <p className='absolute -right-1.25 -bottom-1.25 w-4 text-center leading-4 bg-black text-white aspect-square rounded-full text-[8px] '>{cartTotal}</p>
                 </Link>
 
                 <HiOutlineBars3BottomRight onClick={() => setVisible(true)} className='w-5 cursor-pointer sm:hidden' size={22} />
