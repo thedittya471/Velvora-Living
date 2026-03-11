@@ -5,7 +5,7 @@ import { ShopContext } from '../context/ShopContext'
 import { useNavigate } from 'react-router-dom'
 
 const PlaceOrder = () => {
-  const { cartItems, currency, delivery_fee, getCartTotal, isAuthenticated, fetchCart, refreshAccessToken } = useContext(ShopContext)
+  const { cartItems, currency, delivery_fee, getCartTotal, isAuthenticated, fetchCart, refreshAccessToken, accessToken } = useContext(ShopContext)
   const navigate = useNavigate()
 
   const [formData, setFormData] = useState({
@@ -62,22 +62,23 @@ const PlaceOrder = () => {
         paymentMethod: paymentMethodMap[method] || 'COD'
       }
 
+      const createOrderRequest = (token) => axios.post(
+        'https://velvora-living-backend.vercel.app/api/v1/orders/create-order',
+        payload,
+        {
+          withCredentials: true,
+          ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {})
+        }
+      )
+
       try {
-        await axios.post(
-          'https://velvora-living-backend.vercel.app/api/v1/orders/create-order',
-          payload,
-          { withCredentials: true }
-        )
+        await createOrderRequest(accessToken)
       } catch (error) {
         if (error?.response?.status === 401) {
-          const refreshed = await refreshAccessToken()
-          if (!refreshed) throw error
+          const newAccessToken = await refreshAccessToken()
+          if (!newAccessToken) throw error
 
-          await axios.post(
-            'https://velvora-living-backend.vercel.app/api/v1/orders/create-order',
-            payload,
-            { withCredentials: true }
-          )
+          await createOrderRequest(newAccessToken)
         } else {
           throw error
         }
