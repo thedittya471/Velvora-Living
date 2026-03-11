@@ -12,6 +12,10 @@ const addToCart = asyncHandler(async (req, res) => {
     const product = await Product.findById(productId);
     if (!product) throw new apiError(404, 'Invalid product id');
 
+    if (product.stock <= 0) {
+        throw new apiError(400, 'Product is out of stock');
+    }
+
     // support different product field names safely
     const productName = product?.name || product?.title || product?.productName;
     if (!productName) {
@@ -44,6 +48,10 @@ const addToCart = asyncHandler(async (req, res) => {
         );
 
         if (itemIndex > -1) {
+            if (cart.items[itemIndex].quantity >= product.stock) {
+                throw new apiError(400, 'Product is out of stock');
+            }
+
             cart.items[itemIndex].quantity += 1;
             cart.items[itemIndex].name = productName;
             cart.items[itemIndex].images = productImages;
@@ -61,6 +69,11 @@ const addToCart = asyncHandler(async (req, res) => {
         await cart.save();
     }
 
+    await cart.populate({
+        path: 'items.product',
+        select: 'name price images stock',
+    });
+
     return res
         .status(200)
         .json(new apiResponse(200, cart, 'Product added to cart'));
@@ -69,7 +82,7 @@ const addToCart = asyncHandler(async (req, res) => {
 const getCart = asyncHandler(async (req, res) => {
     const cart = await Cart.findOne({ user: req.user._id }).populate({
         path: 'items.product',
-        select: 'name price images quantity',
+        select: 'name price images stock',
     });
 
     if (!cart) {
@@ -101,8 +114,22 @@ const updateCartItem = asyncHandler(async (req, res) => {
         (item) => item.product.toString() == productId
     );
 
-    if (!quantity || ![1, -1].includes(quantity)) {
-        throw new apiError(400, 'Quantity must be 1 or -1');
+    if (itemIndex === -1) {
+        throw new apiError(404, 'Cart item not found');
+    }
+
+    if (quantity === 1) {
+        const product = await Product.findById(productId).select('stock name');
+
+        if (!product) {
+            throw new apiError(404, 'Product not found');
+        }
+
+        if (product.stock <= cart.items[itemIndex].quantity) {
+            throw new apiError(400, 'Product is out of stock');
+        }
+
+        cart.items[itemIndex].name = product.name;
     }
 
     cart.items[itemIndex].quantity += quantity;
@@ -112,6 +139,11 @@ const updateCartItem = asyncHandler(async (req, res) => {
     }
 
     await cart.save();
+
+    await cart.populate({
+        path: 'items.product',
+        select: 'name price images stock',
+    });
 
     return res
         .status(200)

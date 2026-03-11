@@ -12,7 +12,8 @@ const Cart = () => {
     delivery_fee,
     updateCartItem,
     clearCart,
-    getCartTotal
+    getCartTotal,
+    getProductStock
   } = useContext(ShopContext)
 
   const subtotal = getCartTotal ? getCartTotal() : 0
@@ -49,6 +50,17 @@ const Cart = () => {
     return ''
   }
 
+  const getAvailableStock = (item) => {
+    const productId = item?.product?._id || item?.product
+    const populatedStock = item?.product?.stock
+
+    if (populatedStock !== undefined && populatedStock !== null) {
+      return Number(populatedStock)
+    }
+
+    return getProductStock(productId)
+  }
+
   return (
     <div className='border-t pt-14'>
       <div className='text-2xl mb-3'>
@@ -61,7 +73,13 @@ const Cart = () => {
       )}
 
       <div>
-        {(cartItems || []).map((item, index) => (
+        {(cartItems || []).map((item, index) => {
+          const productId = item?.product?._id || item?.product
+          const availableStock = getAvailableStock(item)
+          const hasKnownStock = availableStock !== null && !Number.isNaN(availableStock)
+          const isMaxQuantityReached = hasKnownStock && availableStock > 0 && (item?.quantity || 0) >= availableStock
+
+          return (
           <div
             key={index}
             className='py-4 border-t border-b text-gray-700 grid grid-cols-[4fr_2fr_1fr] items-center gap-4'
@@ -85,7 +103,7 @@ const Cart = () => {
             <div className='flex items-center gap-2'>
               <button
                 className='border px-2 py-1'
-                onClick={() => updateCartItem(item?.product?._id || item?.product, -1)}
+                onClick={() => updateCartItem(productId, -1)}
               >
                 -
               </button>
@@ -97,18 +115,25 @@ const Cart = () => {
                 readOnly
               />
               <button
-                className='border px-2 py-1'
-                onClick={() => updateCartItem(item?.product?._id || item?.product, 1)}
+                className={`border px-2 py-1 ${isMaxQuantityReached || availableStock === 0 ? 'cursor-not-allowed bg-gray-100 text-gray-400' : ''}`}
+                onClick={() => updateCartItem(productId, 1)}
+                disabled={isMaxQuantityReached || (hasKnownStock && availableStock === 0)}
               >
                 +
               </button>
             </div>
 
-            <p className='text-right font-medium'>
-              {currency} {(item?.price || 0) * (item?.quantity || 0)}
-            </p>
+            <div className='text-right'>
+              <p className='font-medium'>
+                {currency} {(item?.price || 0) * (item?.quantity || 0)}
+              </p>
+              {hasKnownStock && availableStock > 0 && isMaxQuantityReached && (
+                <p className='text-xs text-red-500 mt-1'>Out of stock</p>
+              )}
+            </div>
           </div>
-        ))}
+          )
+        })}
       </div>
 
       {cartItems?.length > 0 && (

@@ -6,7 +6,7 @@ import { CiStar } from "react-icons/ci";
 import { ShopContext } from '../context/ShopContext';
 
 const Product = () => {
-  const { currency, addToCart, isAuthenticated } = useContext(ShopContext)
+  const { currency, addToCart, isAuthenticated, getCartItemQuantity, isProductOutOfStock } = useContext(ShopContext)
   const { productId } = useParams()
   const navigate = useNavigate()
   const [productData, setProductData] = useState(null)
@@ -44,6 +44,10 @@ const Product = () => {
     await addToCart(productData._id)
   }
 
+  const cartQuantity = getCartItemQuantity(productData?._id)
+  const isOutOfStock = isProductOutOfStock(productData?._id, productData?.stock)
+  const remainingStock = Math.max((productData?.stock || 0) - cartQuantity, 0)
+
   if (loading) return <div className='pt-10'>Loading product...</div>
   if (error) return <div className='pt-10 text-red-500'>Error: {error}</div>
   if (!productData) return <div className='pt-10'>Product not found.</div>
@@ -80,12 +84,16 @@ const Product = () => {
           </div>
           <p className='mt-5 text-3xl font-medium'>{currency} {productData.price}</p>
           <p className='mt-5 text-gray-500 md:w-4/5 mb-8'>{productData.description}</p>
+          <p className='mb-4 text-sm text-gray-500'>
+            {remainingStock > 0 ? `${remainingStock} left in stock` : 'Out of stock'}
+          </p>
 
           <button
             onClick={handleAddToCart}
-            className='bg-black text-white px-8 py-3 text-sm active:bg-gray-700'
+            disabled={isOutOfStock}
+            className={`px-8 py-3 text-sm ${isOutOfStock ? 'bg-gray-400 text-white cursor-not-allowed' : 'bg-black text-white active:bg-gray-700'}`}
           >
-            ADD TO CART
+            {isOutOfStock ? 'OUT OF STOCK' : 'ADD TO CART'}
           </button>
 
           <hr className='mt-8 sm:w-4/5' />

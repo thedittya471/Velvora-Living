@@ -174,6 +174,36 @@ const ShopContextProvider = (props) => {
         setCartItems([])
     }
 
+    const getProductStock = (productId) => {
+        if (!productId) return null
+
+        const normalizedId = typeof productId === 'object' ? productId?._id : productId
+        const product = products.find((item) => item?._id === normalizedId)
+        if (product?.stock === undefined || product?.stock === null) return null
+
+        return Number(product.stock)
+    }
+
+    const getCartItemQuantity = (productId) => {
+        if (!productId) return 0
+
+        const normalizedId = typeof productId === 'object' ? productId?._id : productId
+        const cartItem = cartItems.find((item) => {
+            const itemProductId = typeof item?.product === 'object' ? item?.product?._id : item?.product
+            return itemProductId === normalizedId
+        })
+
+        return Number(cartItem?.quantity || 0)
+    }
+
+    const isProductOutOfStock = (productId, fallbackStock = null) => {
+        const availableStock = fallbackStock ?? getProductStock(productId)
+        if (availableStock === null || Number.isNaN(Number(availableStock))) return false
+        if (availableStock <= 0) return true
+
+        return getCartItemQuantity(productId) >= availableStock
+    }
+
     const addToCart = async (productId) => {
     if (!productId) {
         console.error('addToCart: productId missing')
@@ -203,6 +233,10 @@ const ShopContextProvider = (props) => {
         await fetchCart()
     } catch (err) {
         console.error('Add to cart error:', err?.response?.data || err.message)
+        const message = err?.response?.data?.message
+        if (message) {
+            alert(message)
+        }
     }
 }
 
@@ -216,6 +250,10 @@ const ShopContextProvider = (props) => {
             setCartItems(res?.data?.data?.items || [])
         } catch (err) {
             console.error('Update cart error:', err)
+            const message = err?.response?.data?.message
+            if (message) {
+                alert(message)
+            }
         }
     }
 
@@ -258,7 +296,10 @@ const ShopContextProvider = (props) => {
         updateCartItem,
         clearCart,
         getCartCount,
-        getCartTotal
+        getCartTotal,
+        getProductStock,
+        getCartItemQuantity,
+        isProductOutOfStock
     }
 
     return (
