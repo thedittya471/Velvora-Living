@@ -11,12 +11,33 @@ node_modules
 dist
 dist-ssr
 *.local
+.vite
+coverage
+
+# Env files
+.env
+.env.*
+!.env.example
+
+# TypeScript
+*.tsbuildinfo
+
+# Cache directories
+.cache
+.parcel-cache
+.eslintcache
+
+# Test output
+playwright-report
+test-results
 
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
 .idea
 .DS_Store
+.DS_Store?
+Thumbs.db
 *.suo
 *.ntvs*
 *.njsproj

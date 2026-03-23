@@ -2,6 +2,8 @@ import React, { useContext, useEffect, useState } from 'react'
 import { ShopContext } from '../context/ShopContext'
 import Title from './Title'
 import ProductItem from './ProductItem'
+import { Button } from "@/components/ui/button"
+import { Spinner } from "@/components/ui/spinner"
 
 const LatestCollection = () => {
 
@@ -15,7 +17,14 @@ const LatestCollection = () => {
   console.log("Latest products:", latestProducts); // Check what's in latestProducts
   console.log("Loading:", loading, "Error:", error);
 
-  if (loading) return <p className='text-center py-8 px-8 text-3xl'>Loading...</p>
+  if (loading) return (
+    <div className="flex items-center justify-center py-12">
+      <Button variant="outline" disabled className="gap-2 bg-gray-900 border-gray-700 text-gray-400">
+        <Spinner />
+        Loading
+      </Button>
+    </div>
+  )
   if (error) return <p className='text-center py-8 px-8 text-3xl'>Error...</p>
 
   return (

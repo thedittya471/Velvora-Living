@@ -5,6 +5,8 @@ import { useState } from 'react'
 import { useEffect } from 'react'
 import Title from './Title'
 import ProductItem from './ProductItem'
+import { Button } from "@/components/ui/button"
+import { Spinner } from "@/components/ui/spinner"
 
 const BestSeller = () => {
 
@@ -16,7 +18,14 @@ const BestSeller = () => {
         setBestSeller(bestProduct.slice(0, 5))
     }, [products])
 
-    if (loading) return <p className='text-center py-8 px-8 text-3xl'>Loading...</p>
+    if (loading) return (
+        <div className="flex items-center justify-center py-12">
+            <Button variant="outline" disabled className="gap-2 bg-gray-900 border-gray-700 text-gray-400">
+                <Spinner />
+                Loading
+            </Button>
+        </div>
+    )
     if (error) return <p className='text-center py-8 px-8 text-3xl'>Error...</p>
 
     return (
